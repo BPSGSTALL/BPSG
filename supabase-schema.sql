@@ -448,7 +448,7 @@ begin
   pl := _auth_player(p_user, p_pin);
   s := _get_session(pl.id, p_session, array['guess']);
   if s.status <> 'active' then return s.result; end if;
-  return _finish(s.id, false, 0, 'Time up! The number was ' || (s.state ->> 'target'));
+  return _finish(s.id, false, 0, 'Round ended. The number was ' || (s.state ->> 'target'));
 end $$;
 
 create or replace function maze_finish(p_user text, p_pin text, p_session bigint, p_moves text)
@@ -575,6 +575,7 @@ begin
   s := _get_session(pl.id, p_session, array['kbc']);
   if s.status <> 'active' then raise exception 'Game is over'; end if;
   st := s.state;
+  if coalesce((st ->> 'awaiting_choice')::boolean, false) then raise exception 'Choose Play Next Level or Quit & Collect first'; end if;
   if (st ->> 'used50')::boolean then raise exception 'You already used the 50-50 lifeline'; end if;
   ca := (st -> 'qs' -> (st ->> 'i')::int ->> 'a')::int;
   select array_agg(x) into rem from (select gs as x from generate_series(0, 3) gs where gs <> ca order by random() limit 2) t3;
